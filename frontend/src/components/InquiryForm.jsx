@@ -18,9 +18,10 @@ class InquiryForm extends Component {
         name: "",
         contactNumber: "",
         location: "",
-        category: "",
+        categories: [], // Changed from single category to array of categories
         requirement: ""
       },
+      showCategoryDropdown: false,
       formSubmitted: false,
       submitMessage: "",
       isLoading: false
@@ -37,11 +38,41 @@ class InquiryForm extends Component {
     }));
   };
 
-  handleSubmitRequirement = async () => {
-    const { name, contactNumber, location, category, requirement } = this.state.formData;
+  toggleCategory = (category) => {
+    this.setState(prevState => {
+      const currentCategories = [...prevState.formData.categories];
+      
+      if (currentCategories.includes(category)) {
+        // Remove if already selected
+        return {
+          formData: {
+            ...prevState.formData,
+            categories: currentCategories.filter(cat => cat !== category)
+          }
+        };
+      } else {
+        // Add if not already selected
+        return {
+          formData: {
+            ...prevState.formData,
+            categories: [...currentCategories, category]
+          }
+        };
+      }
+    });
+  };
 
-    if (!name || !contactNumber || !location || !category || !requirement) {
-      alert("Please fill in all fields!");
+  toggleCategoryDropdown = () => {
+    this.setState(prevState => ({
+      showCategoryDropdown: !prevState.showCategoryDropdown
+    }));
+  };
+
+  handleSubmitRequirement = async () => {
+    const { name, contactNumber, location, categories, requirement } = this.state.formData;
+
+    if (!name || !contactNumber || !location || categories.length === 0 || !requirement) {
+      alert("Please fill in all fields and select at least one category!");
       return;
     }
 
@@ -71,7 +102,7 @@ class InquiryForm extends Component {
               name: "",
               contactNumber: "",
               location: "",
-              category: "",
+              categories: [],
               requirement: ""
             },
             formSubmitted: false,
@@ -91,7 +122,7 @@ class InquiryForm extends Component {
   };
 
   render() {
-    const { formData, formSubmitted, submitMessage, isLoading } = this.state;
+    const { formData, formSubmitted, submitMessage, isLoading, showCategoryDropdown } = this.state;
     const { onClose } = this.props;
 
     return (
@@ -144,17 +175,70 @@ class InquiryForm extends Component {
                 value={formData.contactNumber}
                 onChange={this.handleChange}
               />
-              <select
-                name="category"
-                className="w-full px-4 py-3 rounded-xl bg-white border border-gray-300 focus:ring-2 focus:ring-pink-400 focus:outline-none"
-                value={formData.category}
-                onChange={this.handleChange}
-              >
-                <option value="">Select Vendor Category</option>
-                {categories.map((cat, idx) => (
-                  <option key={idx} value={cat}>{cat}</option>
-                ))}
-              </select>
+              
+              {/* Multi-select category dropdown */}
+              <div className="relative">
+                <button 
+                  type="button"
+                  onClick={this.toggleCategoryDropdown}
+                  className="w-full px-4 py-3 rounded-xl bg-white border border-gray-300 focus:ring-2 focus:ring-pink-400 focus:outline-none text-left flex justify-between items-center"
+                >
+                  <span>
+                    {formData.categories.length === 0 
+                      ? "Select Vendor Categories" 
+                      : `${formData.categories.length} ${formData.categories.length === 1 ? 'category' : 'categories'} selected`}
+                  </span>
+                  <svg className={`w-5 h-5 transition-transform ${showCategoryDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {showCategoryDropdown && (
+                  <div className="absolute left-0 right-0 mt-2 bg-white border border-gray-300 rounded-xl shadow-lg max-h-60 overflow-y-auto z-10">
+                    <div className="p-2">
+                      {categories.map((category, idx) => (
+                        <div 
+                          key={idx} 
+                          className="flex items-center px-3 py-2 hover:bg-pink-50 rounded-lg cursor-pointer"
+                          onClick={() => this.toggleCategory(category)}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.categories.includes(category)}
+                            onChange={() => {}}
+                            className="mr-2 h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
+                          />
+                          <span>{category}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Selected categories chips/badges */}
+              {formData.categories.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {formData.categories.map((cat, idx) => (
+                    <span 
+                      key={idx} 
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-pink-100 text-pink-800"
+                    >
+                      {cat}
+                      <button
+                        type="button"
+                        onClick={() => this.toggleCategory(cat)}
+                        className="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full bg-pink-200 text-pink-800 hover:bg-pink-300"
+                      >
+                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              
               <input
                 type="text"
                 name="location"
